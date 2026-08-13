@@ -1,448 +1,117 @@
-# Spacecraft Attitude Dynamics
+# Spacecraft Attitude Dynamics — 6U CubeSat ADCS
 
-MATLAB/Simulink implementation of an Attitude Determination and Control System (ADCS) for a 6U CubeSat, developed as the final project for the **Spacecraft Attitude Dynamics** course at Politecnico di Milano.
-
-The project covers spacecraft rotational dynamics and kinematics, environmental disturbances, sensor modelling, attitude determination, attitude propagation, nonlinear and linear control, actuator modelling, and statistical performance verification.
-
----
-
-## Project Overview
-
-The objective is to design and verify an ADCS capable of maintaining accurate nadir pointing for a 6U CubeSat dedicated to environmental monitoring.
-
-The spacecraft operates on an elliptical Earth orbit with:
-
-- Semi-major axis: **9371 km**
-- Eccentricity: **0.2**
-- Inclination: **30°**
-- Perigee altitude: approximately **1124 km**
-- Apogee altitude: approximately **4876 km**
-
-The main attitude requirement is:
-
-> **Nadir pointing accuracy < 1°**
-
-The spacecraft attitude is represented using **Direction Cosine Matrices (DCMs)**.
-
-The complete ADCS is implemented in **MATLAB/Simulink**.
+Politecnico di Milano · Spacecraft Attitude Dynamics · A.Y. 2025/26  
+**Project Group: Slingshooters**
 
 ---
 
-## System Architecture
+## Overview
 
-The simulation is organized around the physical spacecraft and the onboard ADCS.
+This repository contains the MATLAB/Simulink implementation of an **Attitude Determination and Control System (ADCS)** for a 6U CubeSat dedicated to environmental monitoring.
+
+The project covers spacecraft rotational dynamics and kinematics, environmental and disturbance modelling, realistic sensor models, attitude determination, eclipse propagation, nonlinear and linear control, actuator modelling, and statistical verification.
+
+### Key features
+
+- Rigid-body attitude dynamics and DCM kinematics
+- Earth orbit, eclipse, and geomagnetic-field modelling
+- Gravity-gradient, magnetic, SRP, and atmospheric-drag disturbances
+- Sun sensor, magnetometer, and gyroscope models
+- White, pink, and brown sensor-noise modelling
+- Oustaloup fractional-order approximation
+- q-Method attitude determination
+- Gyroscope-based eclipse propagation
+- Nonlinear de-tumbling and re-pointing control
+- Linear nadir-pointing control
+- Reaction-wheel actuator and saturation modelling
+- Bode/Nyquist robustness analysis
+- Statistical verification campaign
+
+## Mission & Spacecraft
+
+| Parameter | Value |
+|---|---:|
+| Configuration | 6U CubeSat |
+| Dimensions | 30 × 20 × 10 cm |
+| Mass | 12 kg |
+| Orbit semi-major axis | 9371 km |
+| Eccentricity | 0.2 |
+| Inclination | 30° |
+| Pointing requirement | < 1° nadir |
+
+## ADCS Architecture
 
 ```text
-                    ┌──────────────────────┐
-                    │      Environment     │
-                    │                      │
-                    │ Orbit / Sun / Earth  │
-                    │ Magnetic Field /     │
-                    │ Eclipse / Target     │
-                    └──────────┬───────────┘
-                               │
-                               ▼
-                    ┌──────────────────────┐
-                    │ Spacecraft Dynamics  │
-                    │                      │
-                    │ Euler Equations      │
-                    │ Rotational Motion    │
-                    └──────────┬───────────┘
-                               │
-                               ▼
-                    ┌──────────────────────┐
-                    │ Spacecraft Kinematics│
-                    │                      │
-                    │ DCM Propagation      │
-                    └──────────┬───────────┘
-                               │
-                ┌──────────────┴──────────────┐
-                │                             │
-                ▼                             ▼
-       ┌─────────────────┐          ┌─────────────────┐
-       │     Sensors     │          │    Actuators    │
-       │                 │          │                 │
-       │ Sun Sensor      │          │ Reaction Wheels │
-       │ Magnetometer    │          │                 │
-       │ Gyroscope       │          │                 │
-       └────────┬────────┘          └────────▲────────┘
-                │                            │
-                ▼                            │
-       ┌───────────────────────┐             │
-       │ Attitude Determination│             │
-       │                       │             │
-       │ q-Method              │             │
-       │ Eclipse Propagation   │─────────────┘
-       └──────────┬────────────┘
-                  │
-                  ▼
-       ┌──────────────────────┐
-       │    Control System    │
-       │                      │
-       │ De-Tumbling          │
-       │ Re-Pointing          │
-       │ Linear Nadir Control │
-       └──────────────────────┘
-````
-
----
-
-## Spacecraft Model
-
-The spacecraft is modelled as a rigid 6U CubeSat with:
-
-* Dimensions: **30 × 20 × 10 cm**
-* Mass: **12 kg**
-* Principal-axis body frame
-* Inertia tensor:
-
-```text
-I = diag(0.1300, 0.1000, 0.0500) kg·m²
+Environment
+    │
+    ▼
+Spacecraft Dynamics ──► Spacecraft Kinematics
+    │                         │
+    ├──────────────┐          │
+    ▼              ▼          ▼
+ Sensors       Actuators   Attitude Determination
+    │              ▲          │
+    └──────────────┴──────────┘
+                   │
+                   ▼
+             Control System
+        De-tumbling / Re-pointing
+             / Nadir Control
 ```
 
-The rotational dynamics are described using Euler's rigid-body equations:
+## Verification
 
-```text
-Iω̇ + ω × (Iω) = T_total
-```
+The final verification campaign used:
 
-where the total torque includes:
+- 30 independent simulations
+- 2 orbital periods per simulation
+- Randomised initial conditions
+- Stochastic sensor effects
 
-* Gravity-gradient torque
-* Magnetic torque
-* Control torque generated by the reaction wheels
-
-The attitude kinematics are propagated using the Poisson equation for the Direction Cosine Matrix.
-
-Numerical orthogonalization is applied during propagation to prevent drift from the orthogonality constraint.
-
----
-
-## Environment and Disturbances
-
-The environment model includes:
-
-### Earth Orbit
-
-The spacecraft position is propagated along the assigned elliptical orbit.
-
-### Eclipse Model
-
-A dual-cone eclipse model is implemented, accounting for:
-
-* Finite angular size of the Sun
-* Finite angular size of the Earth
-* Umbra
-* Penumbra
-* Variable solar visibility
-
-The Earth is modelled as an oblate ellipsoid rather than a perfect sphere.
-
-### Geomagnetic Field
-
-The Earth's magnetic field is modelled using the **International Geomagnetic Reference Field (IGRF)**.
-
-The implementation uses the IGRF coefficients corresponding to the 2025 epoch.
-
-The resulting magnetic field is validated against reference IGRF data.
-
-### Disturbance Torques
-
-The main disturbance sources considered are:
-
-* Magnetic torque
-* Gravity-gradient torque
-* Solar radiation pressure
-* Atmospheric drag
-
-The magnetic and gravity-gradient torques are identified as the dominant disturbances for the considered mission.
-
----
-
-## Sensor Modelling
-
-Three sensors are implemented:
-
-### Sun Sensor
-
-The Sun sensor provides the Sun direction in the spacecraft body frame.
-
-The model includes:
-
-* Installation misalignment
-* Measurement noise
-* Bias
-* White noise
-* Pink noise
-* Brown noise
-* Sampling and Zero-Order Hold
-
-The selected sensor is the **NCSS-SA05**.
-
-### Magnetometer
-
-The tri-axial magnetometer measures the Earth's magnetic field in the body frame.
-
-The model includes:
-
-* Misalignment
-* Axis non-orthogonality
-* Bias
-* Quantization
-* Saturation
-* White noise
-* Pink noise
-* Brown noise
-* Sampling
-
-The selected hardware is the **Pegasus Magnetometer**.
-
-### Gyroscope
-
-The gyroscope provides the spacecraft angular velocity.
-
-The measurement model includes:
-
-* Frame misalignment
-* Axis non-orthogonality
-* Scale-factor error
-* Non-linearity
-* Bias instability
-* Angle Random Walk
-* White noise
-* Sampling and saturation
-
-The selected hardware is the **Silicon Sensing CRH02-100**.
-
----
-
-## Oustaloup Approximation
-
-Colored sensor noise is modelled using fractional-order filtering.
-
-A fractional-order operator is approximated using the **Oustaloup recursive approximation**, allowing the simulation of pink noise with an approximately:
-
-```text
--10 dB/decade
-```
-
-spectral slope.
-
-The implementation uses:
-
-* Fractional order: **α = 0.5**
-* Approximation order: **N = 8**
-* Lower frequency: **0.001 rad/s**
-* Upper frequency: **1000 rad/s**
-
-The resulting continuous-time approximation is converted into a discrete-time implementation using the **Tustin transformation**.
-
----
-
-## Actuator Model
-
-The spacecraft uses three orthogonally mounted reaction wheels.
-
-The selected actuator is the **NanoTorque GSW-600**.
-
-The actuator model includes:
-
-* Maximum torque: ±1.5 mN·m
-* Maximum speed at maximum torque: ±3500 rpm
-* Maximum speed: ±6000 rpm
-* Flywheel inertia: 0.3 kg·m²
-* Torque saturation
-
-The nonlinear actuator model accounts for the reduction of available torque at high wheel speeds.
-
----
-
-## Attitude Determination
-
-The attitude determination subsystem estimates the spacecraft DCM from sensor measurements.
-
-During sunlight, the attitude is determined using:
-
-* Sun sensor
-* Magnetometer
-
-The selected estimation method is the **q-Method**.
-
-The sensor contributions are weighted according to their simulated measurement accuracy.
-
-The resulting weights are:
-
-```text
-Sun sensor       α₁ = 0.72
-Magnetometer     α₂ = 0.28
-```
-
-The weighting was obtained from the relative mean angular errors of the two sensors.
-
----
-
-## Eclipse Attitude Propagation
-
-During eclipse, the Sun sensor cannot provide a valid measurement.
-
-The attitude is therefore propagated from the last available attitude estimate using gyroscope measurements.
-
-An initial attempt was made to estimate angular velocity from magnetometer measurements. However, the resulting estimate was too noisy to provide reliable attitude propagation during eclipse.
-
-The gyroscope was therefore included in the final architecture.
-
-This provides a direct example of a system-level design trade-off driven by simulation results rather than by simply following the initial architecture.
-
----
-
-## Control Architecture
-
-The control system is divided into three operational phases.
-
-### 1. De-Tumbling
-
-The spacecraft angular velocity is reduced from the initial post-launch condition.
-
-A nonlinear controller based on a Lyapunov function is used.
-
-The de-tumbling control law is implemented as a proportional angular-rate controller.
-
-### 2. Re-Pointing
-
-Once the angular velocity is sufficiently reduced, the spacecraft is commanded toward the target attitude.
-
-A nonlinear full-state controller is used to reduce both angular-rate and attitude errors.
-
-### 3. Nadir Pointing
-
-Once the spacecraft reaches the required operating region, a linear controller maintains the spacecraft close to the nadir-pointing reference.
-
-The controller is designed using **pole placement**.
-
-The target performance includes:
-
-* Damping ratio: **0.7**
-* Settling time: **50 s**
-* Pointing requirement: **1°**
-
-Bode and Nyquist analyses are also performed to evaluate stability margins and robustness.
-
----
-
-## Verification and Results
-
-A statistical verification campaign was performed using:
-
-* **30 independent simulations**
-* **2 orbital periods per simulation**
-* Randomized initial conditions and stochastic sensor effects
-
-The main performance metric is the nadir-pointing error along the spacecraft `xB` axis.
-
-### Pointing Accuracy
-
-The simulations show that:
-
-* The error is predominantly within **0–0.5°**
-* Maximum observed error: approximately **1.25°**
-* More than **95% of the simulation timestamps** remain below **1°**
-
-Statistical analysis gives:
-
-```text
-99% CI of mean pointing error:
-0.74173° – 0.77635°
-
-95% CI of 95th percentile:
-0.95617° – 0.99162°
-```
-
-The statistical analysis confirms that the required pointing accuracy is achieved.
-
-### Reaction Wheel Saturation
-
-The expected time for the first reaction wheel to reach the conservative maximum-speed-at-maximum-torque condition is:
-
-```text
-99% CI:
-11.7165 – 12.1126 years
-```
-
-This exceeds the intended spacecraft operational lifetime.
-
----
-
-## Key Engineering Outcomes
-
-The project demonstrates a complete spacecraft ADCS design workflow:
-
-* Spacecraft rotational dynamics
-* Attitude kinematics
-* Environmental modelling
-* Geomagnetic field modelling
-* Eclipse and shadow modelling
-* Disturbance torque analysis
-* Realistic sensor error modelling
-* Colored noise generation
-* Attitude determination
-* Eclipse attitude propagation
-* Nonlinear control
-* Linear control design
-* Reaction wheel modelling
-* Stability and robustness analysis
-* Monte Carlo-style simulation campaign
-* Statistical verification against system requirements
-
-The final architecture satisfies the primary mission requirements while remaining within the physical capabilities of the selected hardware.
-
----
+The reported results show that more than 95% of simulation timestamps remain below the 1° pointing requirement, with a maximum observed error of approximately 1.25°.
 
 ## Software
 
-The project was developed using:
+- MATLAB
+- Simulink
+- MATLAB Control System Toolbox
 
-* **MATLAB**
-* **Simulink**
-* MATLAB Control System Toolbox
-* MATLAB/Simulink numerical simulation tools
+## Getting Started
 
----
+Clone the repository, open MATLAB, and add the source tree to the MATLAB path:
 
-## Team
+```matlab
+addpath(genpath(pwd))
+```
 
-**Spacecraft Attitude Dynamics – Final Project**
+The main simulation and Simulink models are contained in `src/`.
 
-Politecnico di Milano
-School of Industrial and Information Engineering
-Academic Year 2025/2026
+## Repository Structure
 
-### Team Members
+```text
+.
+├── src/
+├── README.md
+└── SpacecraftAttitudeDynamics_FinalReport_Redatto.pdf
+```
 
-* Stefano Diambri
-* Ludovico Drioli
-* Michele Pellizzer
-* Giovanni Nicola D'Aloisio
+## Academic Context
 
----
+**Course:** Spacecraft Attitude Dynamics  
+**Institution:** Politecnico di Milano  
+**Academic Year:** 2025/2026
 
-## References
+### Team
 
-The project makes use of technical documentation, spacecraft ADCS literature, geomagnetic field models and component datasheets, including:
+- Stefano Diambri
+- Ludovico Drioli
+- Michele Pellizzer
+- Giovanni Nicola D'Aloisio
 
-* NASA — *State-of-the-Art Small Spacecraft Technology*
-* J. R. Wertz — *Spacecraft Attitude Determination and Control*
-* V. Pesce, A. Colagrossi, S. Silvestrini — *Modern Spacecraft Guidance, Navigation, and Control*
-* NOAA / IGRF — International Geomagnetic Reference Field
-* GomSpace — NanoTorque GSW-600 Datasheet
-* NewSpace Systems — Pegasus Magnetometer Datasheet
-* NewSpace Systems — NCSS-SA05 Sun Sensor Datasheet
-* Silicon Sensing — CRH02-100 Gyroscope Datasheet
-* Oprzedkiewicz et al. — *An Estimation of Accuracy of Oustaloup Approximation*
+## Report
 
----
+The complete technical report is included in the repository.
 
 ## Disclaimer
 
-This repository contains academic work developed as part of the Spacecraft Attitude Dynamics course at Politecnico di Milano.
-
-The models and results are intended for educational and engineering-analysis purposes and should not be considered flight-qualified spacecraft software.
+This repository contains academic spacecraft simulation and control work. The models and results are intended for educational and engineering-analysis purposes and should not be considered flight-qualified spacecraft software.
