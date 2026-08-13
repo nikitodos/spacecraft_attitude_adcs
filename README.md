@@ -1,5 +1,9 @@
 # Spacecraft Attitude Dynamics — 6U CubeSat ADCS
 
+<p align="center">
+  <img src="Logo_Project.png" width="600">
+</p>
+
 Politecnico di Milano · Spacecraft Attitude Dynamics · A.Y. 2025/26  
 **Project Group: Slingshooters**
 
