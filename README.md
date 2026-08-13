@@ -68,12 +68,12 @@ The simulation is organized around the physical spacecraft and the onboard ADCS.
        └────────┬────────┘          └────────▲────────┘
                 │                            │
                 ▼                            │
-       ┌──────────────────────┐              │
-       │ Attitude Determination│              │
-       │                      │              │
-       │ q-Method             │              │
-       │ Eclipse Propagation  │──────────────┘
-       └──────────┬───────────┘
+       ┌───────────────────────┐             │
+       │ Attitude Determination│             │
+       │                       │             │
+       │ q-Method              │             │
+       │ Eclipse Propagation   │─────────────┘
+       └──────────┬────────────┘
                   │
                   ▼
        ┌──────────────────────┐
@@ -81,7 +81,7 @@ The simulation is organized around the physical spacecraft and the onboard ADCS.
        │                      │
        │ De-Tumbling          │
        │ Re-Pointing          │
-       │ Linear Nadir Control  │
+       │ Linear Nadir Control │
        └──────────────────────┘
 ````
 
@@ -405,36 +405,6 @@ The project was developed using:
 * **Simulink**
 * MATLAB Control System Toolbox
 * MATLAB/Simulink numerical simulation tools
-
----
-
-## Repository Structure
-
-```text
-Spacecraft-Attitude-Dynamics/
-│
-├── README.md
-│
-├── MATLAB/
-│   ├── *.m
-│   └── ...
-│
-├── Simulink/
-│   ├── *.slx
-│   └── ...
-│
-├── Data/
-│   └── ...
-│
-├── Results/
-│   ├── figures/
-│   └── ...
-│
-└── Report/
-    └── Spacecraft_Attitude_Dynamics_Report.pdf
-```
-
-The exact folder structure may vary depending on the organization of the original MATLAB/Simulink project.
 
 ---
 
